@@ -1,0 +1,72 @@
+
+<div class="page-header">
+        <div class="container">
+            <div class="col-sm-6">
+                <h1>Mongo Rotten Tomatoes Scraper</h1>
+                <h3> Saved Articles</h3>
+            </div>
+            <div class="col-sm-6 buttons">
+                <form class="navbar-form navbar-left">
+                    <br>
+                    <a href="/" class="btn btn-info" id="load" data-loading-text="<i class='fa fa-spinner fa-spin'></i>Scraping">Home</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+<!-- Main Section -->
+<main>
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="news">
+                {{#each articles}}
+                    <div class="article container well">
+                        <div class="row">
+                            <div class="col-md-9 article-info">
+                                <div class="article-name">
+                                    <a target="_blank" href="{{link}}"><h4>{{title}}</h4></a>
+                                    <p><a data-button="{{_id}}" class="btn btn-info comment-btn"data-toggle="modal" data-target="#modal-{{_id}}">Comments</a>
+                                    <form action="/articles/one/{{_id}}" method="POST">
+                                        <input type="hidden" name="id" value="{{_id}}">
+                                        <button class="btn btn-yellow" data-loading-text="<i class='fa fa-spinner fa-spin'></i>Deleting" type="submit">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                {{#if image}}
+                                    <a href="{{link}}"><img src="{{image}}" class="center-block article-image"></a>
+                                {{/if}}
+                            </div>
+                        </div>
+                    </div>
+                     <div class="modal fade" data-backdrop="static" id="modal-{{_id}}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content modal-lg">
+                                <div class="modal-header">
+                                    <h3 class="modal-title" id="myModalLabel">{{title}}</h3>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="{{_id}}"></div>
+                                    <form method="POST" action="/articles/:id">
+                                        <input type="hidden" name="id" value="{{_id}}">
+                                        <br>
+                                        <input required class="form-control" type="text" placeholder="Username" name="username">
+                                        <br>
+                                        <input required class="form-control" type="textarea" placeholder="Comment" name="body">
+                                        <br>
+                                        <button id="submit-comment" class="btn btn-info" data-loading-text="<i class='fa fa-spinner fa-spin'></i>Adding Comment" type="submit">Add a comment</button>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                <button type="button" id="close-{{_id}}" data-loading-text="<i class='fa fa-spinner fa-spin'></i>Closing" class="btn btn-yellow" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                {{/each}}
+            </div>
+        </div>
+    </div>
+</main>

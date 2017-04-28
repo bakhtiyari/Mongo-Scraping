@@ -1,3 +1,26 @@
+
+<div class="page-header">
+        <div class="container">
+            <div class="col-sm-6">
+                <h1>Mongo Rotten Tomatoes Scraper</h1>
+            </div>
+            <div class="col-sm-6 buttons">
+                <br>
+                <form class="navbar-form navbar-left">
+                    <a href="/" class="btn btn-info" id="load" data-loading-text="<i class='fa fa-spinner fa-spin'></i>Scraping">Home</a>
+                </form>
+                <form class="navbar-form navbar-left">
+                    <a href="/scrape" class="btn btn-info" id="load" data-loading-text="<i class='fa fa-spinner fa-spin'></i>Scraping">Scrape New Articles</a>
+                </form>
+                <form class="navbar-form navbar-left">
+                    <a href="/saved" class="btn btn-info" id="load" data-loading-text="<i class='fa fa-spinner fa-spin'></i>Scraping">Saved Articles</a>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+
 <!-- Main Section -->
 <main>
     <div class="row">
@@ -9,13 +32,13 @@
                             <div class="col-md-9 article-info">
                                 <div class="article-name">
                                     <a href="{{link}}"><h4>{{title}}</h4></a>
-                                    {{#if author}}
-                                        <h4><small>By {{author}}</small></h4>
-                                    {{/if}}
-                                    <p>{{blurb}}</p>
-                                </div>
-                                <div class="comment-link">
-                                    <a href="/{{articleID}}">Comments</a>
+                                    <form method="POST" action="/">
+                                        <input type="hidden" name="title" value="{{this.title}}">
+                                        <input type="hidden" name="link" value="{{this.link}}">
+                                        <input type="hidden" name="image" value="{{this.image}}">
+                                        <br>
+                                        <button class="btn btn-info" data-loading-text="<i class='fa fa-spinner fa-spin'></i>Saving" type="submit">Save</button>
+                                    </form>
                                 </div>
                             </div>
                             <div class="col-md-3">

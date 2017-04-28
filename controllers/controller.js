@@ -8,162 +8,125 @@ var mongoose = require('mongoose');
 var router = express.Router();
 
 // Import models.
-var Article = require('../models/article');
-var Comment = require('../models/comment');
+var Article = require('../models/article.js');
+var Comment = require('../models/comment.js');
 
-// Pulls article data from the database and uses it to render the index.
-router.get('/', function (req, res) {
-    // Find all articles.
-    Article.find({}).sort({_id: 'desc'}).exec(function (err, data) {
-        // Create array for article data.
-        var resultData = [];
-        // For each article, create an object that handlebars will use to render the article.
-        data.forEach(function (article) {
-            resultData.push({
-                title: article.title,
-                link: article.link,
-                image: article.image,
-                articleID: article.articleID
-            });
-        });
-        // Render index based on the result object compiled above.
-        res.render('index', {result: resultData});
+router.get("/", function(req, res) {
+    res.render("index");
+})
+
+// A GET request to scrape the Rotten Tomatoes website
+router.get("/scrape", function(req, res) {
+  // First, we grab the body of the html with request
+  request("https://editorial.rottentomatoes.com/news/", function(error, response, html) {
+    // Then, we load that into cheerio and save it to $ for a shorthand selector
+    var $ = cheerio.load(html);
+
+    var result = [];
+   
+    $("div.newsItem").each(function(i, element) {
+
+      // Add the text, href, and image of every element, and save them as properties of the result object
+        var title = $(element).find("p").text();
+        var link = $(element).find("a").attr("href");
+	    var image = $(element).find("a").find("img").attr("src");
+
+        if (title && link && image) {
+                //push the elements as an object into the result array
+                result.push({
+                    title: title,
+                    link: link,
+                    image: image
+                })
+        }
+
     });
+
+    res.render("index", { result: result });
+  });
+
 });
 
-// Pulls comment data from the database and uses it to render the comment page.
-router.get('/:id', function(req, res) {
-    // ID is the article ID.
-    var articleID = req.params.id;
-    // Find all comments for that article ID.
-    Article.find({articleID: articleID}).populate('comments').exec(function(err, data) {
+// Saved articles
+router.get("/saved", function(req, res) {
+    var query = Article.find({});
+
+    query.exec(function(err, articles) {
         if (err) {
-            console.log(err);
+            return handleError(err);
         } else {
-            if (data.length > 0) {
-                var commentData = [];
-                data[0].comments.forEach(function(comment) {
-                    commentData.push({
-                        id: comment._id,
-                        text: comment.text,
-                        timestamp: comment.timestamp,
-                        articleID: articleID
-                    });
-                });
 
-                var articleTitle = data[0].title;
-                var link = data[0].link;
-                commentData.push({articleID: articleID, articleTitle: articleTitle, link: link});
-
-                res.render('comment', {commentData: commentData});
-            } else {
-                res.redirect('/');
-            }
+            res.render("saved", { articles: articles });
         }
     });
 });
 
-// Scrapes data from vox.com/news.
-router.get('/api/news', function (req, res) {
-    // Make a request to Rotten tomatoes
-    request('https://editorial.rottentomatoes.com/news/', function (error, response, html) {
+//Save scraped articles into the db
+router.post("/", function(req, res) {
 
-        // Load the html of the page into a cheerio $ variable, similar to jQuery $.
-        var $ = cheerio.load(html);
+    var art = new Article({
+        title: req.body.title,
+        link: req.body.link,
+        image: req.body.image
+    });
 
-        // With cheerio, find each div with the 'm-block' class.
-        // (i: iterator. element: the current element)
-        $('.m-block').each(function (i, element) {
+    art.save(function(err, art) {
+        // If there's an error during this query
+        if (err) {
+            // Log the error
+            return console.log(err);
+        }
+        // Otherwise,
+        else {
+            //log results
+        }
+    });
+     
+    res.redirect("/scrape");
 
-            // Grab the title.
-           
+})
 
-            // Grab the article URL.
-            
+// add comment and push to specified article...
+router.post('/articles/:id', function(req, res) {
+    // create a new comment and pass the req.body to the entry.
+    var comment = new Comment({
+        username: req.body.username,
+        body: req.body.body
+    });
 
-            // Grab the article blurb.
-            
 
-            // Create an author array.
-            
+    comment.save(function(err, result) {
+        // log any errors
+        if (err) {
+            console.log(err);
+        } else {
 
-            // Grab the byline section.
-            
-
-            // Grab the image URL.
-            var image = $(element).children('.m-block__image').children('a').children('img').data('original');
-
-            // Grab the article's unique ID.
-            var articleID = $(element).children('.m-block__body').children('.m-block__body__byline').children('span').data('remote-admin-entry-id');
-
-            // Save these results in an object that we'll save to MongoDB.
-            var newArticle = {
-                title: title,
-                link: link,
-                image: image,
-                articleID: articleID
-            };
-
-            // We're going to query the Article collection for an article by this ID.
-            var query = {articleID: articleID};
-
-            // Run that query. If matched, update with 'newArticle'. If no match, create with 'newArticle.'
-            Article.findOneAndUpdate(query, newArticle, {upsert: true}, function (err) {
+            //updates the article's comments array so that the new comment is included in results
+            Article.findOneAndUpdate({ '_id': req.body.id }, { $push: { 'comment': result._id } }, { new: true }, function(err, result) {
+                // log any errors
                 if (err) {
                     console.log(err);
-                }
-            });
-        });
-
-        res.redirect('/');
-
-    });
-});
-
-// Add new comment.
-router.post('/api/comment/:article', function(req, res) {
-    var articleID = req.params.article;
-    var text = req.body.text;
-    var author = req.body.author;
-
-    var newComment = {
-        text: text,
-        author: author
-    };
-
-    Comment.create(newComment, function(err, data) {
-        if (err) {
-            console.log(err);
-        } else {
-            Article.findOneAndUpdate({articleID: articleID}, { $push: { 'comments': data._id } }, { new: true }, function(error) {
-                if (error) {
-                    console.log(error);
                 } else {
-                    res.redirect('/' + articleID);
+
+                    //takes you back to saved results
+                    res.redirect('/saved');
                 }
             });
         }
     });
-
 });
 
-// Delete comment.
-router.get('/api/comment/:article/:comment', function(req, res) {
-    var id = req.params.comment;
-    var articleID = req.params.article;
-    Comment.remove({_id: id}, function(err) {
+//Delete route for articles
+router.post("/articles/one/:id", function(req, res) {
+
+    Article.findOneAndRemove({ "_id": req.params.id }, { $push: { 'comment': Comment._id } }, function(err) {
         if (err) {
-            console.log(err);
+            return handleError(err);
         } else {
-            Article.findOneAndUpdate({articleID: articleID}, { $pull: { comments: id } }, {safe: true}, function(error, data) {
-                if (error) {
-                    console.log(error);
-                } else {
-                    console.log(data);
-                    res.redirect('/' + articleID);
-                }
-            });
+
+            res.redirect('/saved');
         }
+
     });
 });
 
