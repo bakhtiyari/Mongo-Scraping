@@ -42,7 +42,7 @@ app.use('/', routes);
 // Determining whether to use local or remote database connection.
 var connectionString;
 if (process.env.PORT) {
-    connectionString = 'mongodb://heroku_';
+    connectionString = 'mongodb://heroku_07wvwgz7:1k94sqogioglh79h3sa3qf0mc@ds123311.mlab.com:23311/heroku_07wvwgz7';
 } else {
     connectionString = 'mongodb://localhost/newsScraper';
 }
